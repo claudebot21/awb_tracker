@@ -12,7 +12,7 @@ Route::get('/', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('dashboard', function () {
-        $packages = Package::with('events')->get();
+        $packages = Package::with('events')->orderBy('created_at', 'desc')->get();
 
         return Inertia::render('dashboard', [
             'packages' => $packages,
