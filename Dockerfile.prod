@@ -1,0 +1,67 @@
+FROM php:8.2-fpm-alpine
+
+ARG user=www-data
+ARG uid=33
+
+# Install system dependencies
+RUN apk add --no-cache \
+    git \
+    curl \
+    libpng-dev \
+    libxml2-dev \
+    zip \
+    unzip \
+    oniguruma-dev \
+    nginx \
+    supervisor
+
+# Install PHP extensions
+RUN docker-php-ext-install pdo pdo_mysql mbstring exif pcntl bcmath gd
+
+# Install Redis extension
+RUN apk add --no-cache pcre-dev ${PHPIZE_DEPS} \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && apk del pcre-dev ${PHPIZE_DEPS}
+
+# Get Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Install Node.js and NPM for asset building
+RUN apk add --no-cache nodejs npm
+
+# Set working directory
+WORKDIR /var/www
+
+# Copy composer files first for better layer caching
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-scripts --no-autoloader --optimize-autoloader
+
+# Copy package files
+COPY package.json package-lock.json ./
+RUN npm ci --only=production
+
+# Copy application code
+COPY . .
+
+# Generate autoloader and run scripts
+RUN composer dump-autoloader --optimize \
+    && composer run-script post-autoload-dump \
+    && composer run-script post-update-cmd
+
+# Build assets
+RUN npm run build
+
+# Set permissions
+RUN chown -R ${user}:${user} /var/www \
+    && chmod -R 755 /var/www/storage \
+    && chmod -R 755 /var/www/bootstrap/cache
+
+# Remove dev dependencies
+RUN rm -rf node_modules
+
+USER ${user}
+
+EXPOSE 9000
+
+CMD ["php-fpm"]
