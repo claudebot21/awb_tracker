@@ -35,7 +35,7 @@
                                         <a href="/awb/show/{{ $awb->id }}"
                                            class="px-3 py-1 border border-blue-300 rounded-full text-blue-300 text-xs uppercase font-semibold">Track</a>
                                         <a href="/awb/delete/{{ $awb->id }}"
-                                           class="mx-3 px-3 py-1 border border-red-300 rounded-full text-blue-300 text-xs uppercase font-semibold">Delete</a>
+                                           class="mx-3 px-3 py-1 border border-red-300 rounded-full text-red-300 text-xs uppercase font-semibold">Delete</a>
                                     </div>
                                 </div>
                             </li>
